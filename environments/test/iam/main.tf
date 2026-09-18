@@ -2,71 +2,63 @@ provider "aws" {
   region = var.aws_region
 }
 
-locals {
-  iam_users = toset([
-    "agent-walkllc",
-    "rzkw-iam",
-  ])
-
-  iam_groups = toset([
-    "admin",
-    "read-only",
-  ])
-
-  group_memberships = {
-    "agent-walkllc/read-only" = {
-      user   = "agent-walkllc"
-      groups = ["read-only"]
-    }
-    "rzkw-iam/admin" = {
-      user   = "rzkw-iam"
-      groups = ["admin"]
-    }
-  }
-
-  group_policy_attachments = {
-    "admin/AdministratorAccess"   = "arn:aws:iam::aws:policy/AdministratorAccess"
-    "admin/SystemAdministrator"   = "arn:aws:iam::aws:policy/job-function/SystemAdministrator"
-    "admin/DatabaseAdministrator" = "arn:aws:iam::aws:policy/job-function/DatabaseAdministrator"
-    "admin/NetworkAdministrator"  = "arn:aws:iam::aws:policy/job-function/NetworkAdministrator"
-    "read-only/ReadOnlyAccess"    = "arn:aws:iam::aws:policy/ReadOnlyAccess"
-  }
-
-  user_policy_attachments = {
-    "rzkw-iam/IAMUserChangePassword"        = "arn:aws:iam::aws:policy/IAMUserChangePassword"
-    "rzkw-iam/SignInLocalDevelopmentAccess" = "arn:aws:iam::aws:policy/SignInLocalDevelopmentAccess"
-  }
+resource "aws_iam_user" "agent_walkllc" {
+  name = "agent-walkllc"
 }
 
-resource "aws_iam_user" "this" {
-  for_each = local.iam_users
-
-  name = each.value
+resource "aws_iam_user" "rzkw_iam" {
+  name = "rzkw-iam"
 }
 
-resource "aws_iam_group" "this" {
-  for_each = local.iam_groups
-
-  name = each.value
+resource "aws_iam_group" "admin" {
+  name = "admin"
 }
 
-resource "aws_iam_user_group_membership" "this" {
-  for_each = local.group_memberships
-
-  user   = each.value.user
-  groups = each.value.groups
+resource "aws_iam_group" "read_only" {
+  name = "read-only"
 }
 
-resource "aws_iam_group_policy_attachment" "this" {
-  for_each = local.group_policy_attachments
-
-  group      = split("/", each.key)[0]
-  policy_arn = each.value
+resource "aws_iam_user_group_membership" "agent_walkllc_read_only" {
+  user   = aws_iam_user.agent_walkllc.name
+  groups = [aws_iam_group.read_only.name]
 }
 
-resource "aws_iam_user_policy_attachment" "this" {
-  for_each = local.user_policy_attachments
+resource "aws_iam_user_group_membership" "rzkw_iam_admin" {
+  user   = aws_iam_user.rzkw_iam.name
+  groups = [aws_iam_group.admin.name]
+}
 
-  user       = split("/", each.key)[0]
-  policy_arn = each.value
+resource "aws_iam_group_policy_attachment" "admin_administrator_access" {
+  group      = aws_iam_group.admin.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+resource "aws_iam_group_policy_attachment" "admin_system_administrator" {
+  group      = aws_iam_group.admin.name
+  policy_arn = "arn:aws:iam::aws:policy/job-function/SystemAdministrator"
+}
+
+resource "aws_iam_group_policy_attachment" "admin_database_administrator" {
+  group      = aws_iam_group.admin.name
+  policy_arn = "arn:aws:iam::aws:policy/job-function/DatabaseAdministrator"
+}
+
+resource "aws_iam_group_policy_attachment" "admin_network_administrator" {
+  group      = aws_iam_group.admin.name
+  policy_arn = "arn:aws:iam::aws:policy/job-function/NetworkAdministrator"
+}
+
+resource "aws_iam_group_policy_attachment" "read_only_read_only_access" {
+  group      = aws_iam_group.read_only.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_iam_user_policy_attachment" "rzkw_iam_user_change_password" {
+  user       = aws_iam_user.rzkw_iam.name
+  policy_arn = "arn:aws:iam::aws:policy/IAMUserChangePassword"
+}
+
+resource "aws_iam_user_policy_attachment" "rzkw_iam_sign_in_local_development" {
+  user       = aws_iam_user.rzkw_iam.name
+  policy_arn = "arn:aws:iam::aws:policy/SignInLocalDevelopmentAccess"
 }
