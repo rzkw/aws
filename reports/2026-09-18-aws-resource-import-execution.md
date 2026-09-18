@@ -19,10 +19,10 @@ workflow. No import, backend initialization, or apply was executed.
   `admin` and `read-only`; two `aws_iam_user_group_membership` resources; five
   group and two user AWS-managed policy attachments; `imports.tf` with the
   matching import blocks.
-- `environments/test/budgets` - `monthly-budget` (FORECASTED 50%, ACTUAL
-  80/90%) and `zero-spend` (ACTUAL ABSOLUTE_VALUE 0.01), with live thresholds
-  confirmed read-only via AWS CLI. `imports.tf` imports via
-  `${var.account_id}:<budget-name>`.
+- `environments/test/budgets` - explicit `aws_budgets_budget` resources for
+  `monthly-budget` (FORECASTED 50%, ACTUAL 80/90%) and `zero-spend` (ACTUAL
+  ABSOLUTE_VALUE 0.01), with live thresholds confirmed read-only via AWS CLI.
+  `imports.tf` imports via `${var.account_id}:<budget-name>`.
 - `IMPORT.md` - single root-level import workflow: read-only ID discovery,
   `TF_VAR_*` exports, and per-root `init`/`plan`/`apply`.
 - `.github/workflows/terraform-docs.yml` - copied from `rzkw/oci-cloudinfra`,
@@ -33,9 +33,10 @@ workflow. No import, backend initialization, or apply was executed.
 
 Design notes: the existing main route table is managed directly (no
 `aws_main_route_table_association`, which has no documented import format);
-memberships use `aws_iam_user_group_membership`; budget notifications manage an
-empty subscriber list to match live state. No literal account ID (beyond the
-existing state-bucket name already committed), email, or secret is introduced.
+memberships use `aws_iam_user_group_membership`; budget notifications preserve
+the live alert configuration, including one email subscriber supplied at
+runtime. No literal account ID (beyond the existing state-bucket name already
+committed), email, or secret is introduced.
 
 ## What Was Verified
 
