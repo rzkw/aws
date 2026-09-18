@@ -67,12 +67,8 @@ export TF_VAR_account_id="$AWS_ACCOUNT_ID"
 terraform -chdir=environments/test/vpc init
 terraform -chdir=environments/test/vpc plan
 terraform -chdir=environments/test/vpc apply
-terraform -chdir=environments/test/iam init
-terraform -chdir=environments/test/iam plan
-terraform -chdir=environments/test/iam apply
-terraform -chdir=environments/test/budgets init
-terraform -chdir=environments/test/budgets plan
-terraform -chdir=environments/test/budgets apply
+
+Repeat the above for each module. 
 ```
 
 The corresponding `imports.tf` files must use Terraform import blocks such as `import { to = aws_vpc.this id = var.vpc_id }`, `import { to = aws_iam_user.this["agent-walkllc"] id = "agent-walkllc" }`, `import { to = aws_iam_user_group_membership.this["agent-walkllc/read-only"] id = "agent-walkllc/read-only" }`, and `import { to = aws_budgets_budget.this["monthly-budget"] id = "${var.account_id}:monthly-budget" }`.
