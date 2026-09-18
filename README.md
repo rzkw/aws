@@ -172,6 +172,23 @@ git push origin test-deployment
 
 For detailed information including project structure, common commands, troubleshooting, and best practices, visit the **[→ official documentation](https://towardsthecloud.com/docs/aws-terraform-starter-kit)**.
 
+## Module Documentation
+
+### VPC
+
+<!-- BEGIN_TF_DOCS vpc -->
+<!-- END_TF_DOCS vpc -->
+
+### IAM
+
+<!-- BEGIN_TF_DOCS iam -->
+<!-- END_TF_DOCS iam -->
+
+### Budgets
+
+<!-- BEGIN_TF_DOCS budgets -->
+<!-- END_TF_DOCS budgets -->
+
 ## Author
 
 [Danny Steenman](https://towardsthecloud.com/about)
