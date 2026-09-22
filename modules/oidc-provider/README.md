@@ -1,14 +1,6 @@
-# GitHub Actions OIDC Provider Module
+# oidc-provider Module
 
-This Terraform module creates an AWS IAM OIDC provider and role for GitHub Actions authentication, enabling secure, keyless deployments from GitHub Actions workflows.
-
-## Features
-
-- Creates GitHub Actions OIDC provider in AWS
-- Creates IAM role with trust policy for GitHub Actions
-- Supports managed and inline IAM policies
-- Configurable session duration
-- Repository-scoped authentication
+Terraform module that provisions a GitHub Actions OIDC provider and IAM role, enabling secure keyless authentication for GitHub Actions workflows. Can reuse an existing OIDC provider when one is already configured in the account.
 
 ## Usage
 
@@ -16,98 +8,83 @@ This Terraform module creates an AWS IAM OIDC provider and role for GitHub Actio
 module "oidc_provider" {
   source = "../../modules/oidc-provider"
 
-  github_repo         = "myorg/myrepo"
-  role_name           = "GitHubActionsServiceRole-Terraform"
+  use_existing_oidc_provider = true
+  github_repo                = "<owner>/<repo>"
+  role_name                  = "GitHubActionsServiceRole-Terraform"
+
   managed_policy_arns = [
-    "arn:aws:iam::aws:policy/ReadOnlyAccess"
+    "arn:aws:iam::aws:policy/AdministratorAccess"
   ]
 
   tags = {
-    Environment = "production"
+    Environment = "test"
     ManagedBy   = "terraform"
   }
 }
 ```
 
-## Using in GitHub Actions
-
-After creating the OIDC provider and role, use it in your GitHub Actions workflow:
-
-```yaml
-- name: Configure AWS credentials
-  uses: aws-actions/configure-aws-credentials@v4
-  with:
-    role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsServiceRole-Terraform
-    aws-region: us-east-1
-```
-
-## Requirements
-
-| Name      | Version  |
-| --------- | -------- |
-| terraform | >= 1.5.0 |
-| aws       | >= 5.0   |
-
-## Inputs
-
-| Name                 | Description                                 | Type           | Default                                      | Required |
-| -------------------- | ------------------------------------------- | -------------- | -------------------------------------------- | :------: |
-| github_repo          | GitHub repository name (format: owner/repo) | `string`       | n/a                                          |   yes    |
-| github_thumbprint    | GitHub OIDC thumbprint                      | `string`       | `"6938fd4d98bab03faadb97b34396831e3780aea1"` |    no    |
-| audience_list        | List of allowed audiences                   | `list(string)` | `["sts.amazonaws.com"]`                      |    no    |
-| role_name            | Name of the IAM role                        | `string`       | `"GitHubActionsServiceRole-Terraform"`       |    no    |
-| path                 | IAM path for the role                       | `string`       | `"/"`                                        |    no    |
-| managed_policy_arns  | List of IAM policy ARNs to attach           | `list(string)` | `[]`                                         |    no    |
-| inline_policies      | Map of inline policies                      | `map(string)`  | `{}`                                         |    no    |
-| max_session_duration | Maximum session duration (seconds)          | `number`       | `3600`                                       |    no    |
-| tags                 | Additional resource tags                    | `map(string)`  | `{}`                                         |    no    |
-
-## Outputs
-
-| Name              | Description               |
-| ----------------- | ------------------------- |
-| oidc_provider_arn | ARN of the OIDC provider  |
-| oidc_provider_url | URL of the OIDC provider  |
-| role_arn          | ARN of the IAM role       |
-| role_name         | Name of the IAM role      |
-| role_id           | ID of the IAM role        |
-| role_unique_id    | Unique ID of the IAM role |
+The IAM role trusts the GitHub Actions OIDC provider with a subject claim scoped to `github_repo` (`repo:<owner>/<repo>:*`) and an audience of `sts.amazonaws.com`. See [docs/architecture.md](../../docs/architecture.md) for the trust flow.
 
 ## Security Considerations
 
-1. **Least Privilege**: Attach only the minimum required IAM policies to the role
-2. **Repository Scope**: The trust policy is scoped to your specific repository
-3. **Branch Protection**: Consider limiting access to specific branches using subject claims
-4. **Session Duration**: Keep session duration as short as practical for your use case
+- **Least privilege**: attach only the minimum managed or inline policies the role needs.
+- **Repository scope**: the trust policy subject is scoped to the specific repository.
+- **Branch control**: restrict subjects further (e.g., `repo:<owner>/<repo>:ref:refs/heads/main`) for read-after-apply workflows.
+- **Session duration**: keep `max_session_duration` as short as practical.
 
-## Example: Custom Inline Policy
+## Requirements
 
-```hcl
-module "oidc_provider" {
-  source = "../../modules/oidc-provider"
+<!-- BEGIN_TF_DOCS -->
+## Requirements
 
-  github_repo = "myorg/myrepo"
-  role_name   = "GitHubActionsServiceRole-Terraform"
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
-  inline_policies = {
-    "S3Access" = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "s3:GetObject",
-            "s3:PutObject"
-          ]
-          Resource = "arn:aws:s3:::my-bucket/*"
-        }
-      ]
-    })
-  }
-}
-```
+## Providers
 
-## References
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 
-- [GitHub Actions OIDC Documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
-- [AWS IAM OIDC Identity Providers](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
+| [aws_iam_role.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.github_actions_inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy_attachment.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_openid_connect_provider) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_audience_list"></a> [audience\_list](#input\_audience\_list) | List of allowed audiences for the OIDC provider | `list(string)` | <pre>[<br/>  "sts.amazonaws.com"<br/>]</pre> | no |
+| <a name="input_github_repo"></a> [github\_repo](#input\_github\_repo) | GitHub repository name in the format 'owner/repo' | `string` | n/a | yes |
+| <a name="input_github_thumbprint"></a> [github\_thumbprint](#input\_github\_thumbprint) | GitHub OIDC thumbprint | `string` | `"6938fd4d98bab03faadb97b34396831e3780aea1"` | no |
+| <a name="input_inline_policies"></a> [inline\_policies](#input\_inline\_policies) | Map of inline policy names to policy documents (JSON strings) | `map(string)` | `{}` | no |
+| <a name="input_managed_policy_arns"></a> [managed\_policy\_arns](#input\_managed\_policy\_arns) | List of IAM managed policy ARNs to attach to the role | `list(string)` | `[]` | no |
+| <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum session duration in seconds (3600-43200) | `number` | `3600` | no |
+| <a name="input_path"></a> [path](#input\_path) | Path for the IAM role | `string` | `"/"` | no |
+| <a name="input_role_name"></a> [role\_name](#input\_role\_name) | Name of the IAM role for GitHub Actions | `string` | `"GitHubActionsServiceRole-Terraform"` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to resources | `map(string)` | `{}` | no |
+| <a name="input_use_existing_oidc_provider"></a> [use\_existing\_oidc\_provider](#input\_use\_existing\_oidc\_provider) | Whether to use an existing OIDC provider instead of creating a new one | `bool` | `false` | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | ARN of the GitHub Actions OIDC provider |
+| <a name="output_oidc_provider_url"></a> [oidc\_provider\_url](#output\_oidc\_provider\_url) | URL of the GitHub Actions OIDC provider |
+| <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the GitHub Actions IAM role |
+| <a name="output_role_id"></a> [role\_id](#output\_role\_id) | ID of the GitHub Actions IAM role |
+| <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Name of the GitHub Actions IAM role |
+| <a name="output_role_unique_id"></a> [role\_unique\_id](#output\_role\_unique\_id) | Unique ID of the GitHub Actions IAM role |
+<!-- END_TF_DOCS -->

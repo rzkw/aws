@@ -3,6 +3,12 @@ name: Terraform Docs
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'modules/**'
+      - 'README.md'
+  workflow_dispatch:
 
 jobs:
   docs:
@@ -10,20 +16,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     if: github.actor != 'github-actions[bot]'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@v2.21.0
         with:
           egress-policy: audit
+
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Generate per-module READMEs
         uses: terraform-docs/gh-actions@v1
         with:
-          find-dir: environments/test/**
+          find-dir: modules/**
           output-file: README.md
           output-method: inject
           git-push: false
@@ -32,7 +40,7 @@ jobs:
         run: |
           python3 << 'EOF'
           import glob, os
-          for mod_readme in sorted(glob.glob('environments/test/*/README.md')):
+          for mod_readme in sorted(glob.glob('modules/*/README.md')):
               mod = os.path.basename(os.path.dirname(mod_readme))
               with open(mod_readme) as f:
                   content = f.read()
@@ -62,6 +70,6 @@ jobs:
         run: |
           git config user.name 'agent-walkllc'
           git config user.email 'agent-walkllc@users.noreply.github.com'
-          git add README.md
+          git add README.md modules/*/README.md
           git diff --cached --quiet || git commit -m 'chore: auto-update module docs'
           git push

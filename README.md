@@ -1,198 +1,201 @@
-# [![AWS Terraform Starter Kit header](./images/github-title-banner.png)](https://towardsthecloud.com)
-
-# AWS Terraform Starter Kit
+# AWS Terraform
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![TFLint](https://img.shields.io/badge/linting-tflint-blue.svg?style=flat)](https://github.com/terraform-linters/tflint)
 [![Checkov](https://img.shields.io/badge/security-checkov-brightgreen.svg?style=flat)](https://www.checkov.io/)
 
-A production-ready AWS Terraform starter kit featuring secure OIDC authentication, automated CI/CD pipelines, multi-environment support, and comprehensive security scanning. Get your infrastructure up and running in minutes with best practices baked in.
+Terraform-managed infrastructure for the Walkable development environment on AWS.
 
-## 🚀 Features
+- Secure GitHub Actions OIDC authentication for CI/CD deployments
+- Multi-environment layout with explicit environment-to-account mapping
+- Remote state on S3 with native state locking (no DynamoDB required)
+- TFLint and Checkov run fail-closed in the pipeline
 
-- **⚡ One-Command Bootstrap**: Single command automatically sets up your entire infrastructure pipeline
-  - Creates S3 bucket with native state locking (Terraform 1.10+)
-  - Creates account bootstrap stack for shared OIDC resources (reuses existing provider if present)
-  - Generates environment-specific Terraform configurations
-  - Stores explicit environment-to-account mapping in `config/environments.json`
-  - Provisions environment IAM roles that consume bootstrap OIDC
-  - Auto-generates GitHub Actions workflows for CI/CD
-- **💬 PR Plan Comments**: [Terraform plan outputs](https://github.com/marketplace/actions/terraform-plan-pr-commenter) are automatically posted to your pull requests for easy infrastructure change reviews
-- **🛡️ Built-in Security**: TFLint and Checkov are integrated in the pipeline and configured fail-closed for deployments
+Sensitive values are intentionally omitted from this documentation. AWS account IDs, ARNs, resource IDs, and the state bucket name are redacted; see [Repository Guidance (AGENTS.md)](AGENTS.md) for the redaction policy.
 
-<!-- TIP-LIST:START -->
-> [!TIP]
-> **Stop AWS bill surprises before they ship.**
->
-> Most infrastructure changes look harmless until next month's AWS bill lands. [CloudBurn](https://cloudburn.io) analyzes the cost impact of your Terraform changes right in the GitHub pull request, so expensive mistakes get caught during code review, while a fix is still a one-line change.
->
-> <a href="https://github.com/marketplace/cloudburn-io"><img alt="Install CloudBurn from GitHub Marketplace" src="https://img.shields.io/badge/Install%20CloudBurn-GitHub%20Marketplace-brightgreen.svg?style=for-the-badge&logo=github"/></a>
->
-> <details>
-> <summary>💰 <strong>Set it up once, then never be surprised by AWS costs again</strong></summary>
-> <br/>
->
-> 1. **Install the free [Terraform Plan PR Commenter GitHub Action](https://github.com/marketplace/actions/terraform-plan-pr-commenter)** in the repository where you build your AWS Terraform infrastructure
-> 2. **Then install the [CloudBurn GitHub App](https://github.com/marketplace/cloudburn-io)** on the same repository
->
-> From then on, every PR with infrastructure changes gets a comment with your Terraform plan analysis, and CloudBurn adds a cost report next to it:
-> - **Monthly cost impact**: whether this change raises or lowers your AWS bill, and by how much
-> - **Per-resource breakdown**: which resources drive the change, old versus new monthly cost
-> - **Region-aware pricing**: rates match the region your infrastructure actually deploys to
->
-> Cost review happens inside code review, so you optimize as you code, while the context is still fresh.
->
-> CloudBurn is free during beta. After launch, a free Community plan (1 repository, unlimited users) stays available.
->
-> </details>
-<!-- TIP-LIST:END -->
+## Deployed Infrastructure
 
-## 📋 Prerequisites
+Resources managed by this repository, confirmed against live AWS state (`us-east-1`):
 
-- AWS account with admin access
-- GitHub account with repository admin access
+| Resource | Notes |
+| --- | --- |
+| S3 remote state bucket | Server-side encryption (AES256), bucket versioning enabled, native `.tflock` state locking |
+| GitHub Actions OIDC provider | `token.actions.githubusercontent.com`, audience `sts.amazonaws.com` |
+| GitHub Actions IAM role | OIDC-federated role assumed by CI; scoped to this repository via trust conditions |
+| AWS Budgets | Cost budgets with email- and threshold-based alert rules |
 
-**That's it!** All other tools (Terraform, AWS CLI, jq, TFLint, Checkov) can be installed automatically with `make install-tools`.
+## Estimated Monthly Cost
 
-## 🔧 Quick Start
+Estimated monthly cost is reported in **AUD** using a fixed documented conversion rate of **US$1.00 = A$1.55**.
 
-### ⚠️ Multi-Account Best Practice
+Snapshot taken from AWS Cost Explorer on 2026-09-18 (account-level, region `us-east-1`):
 
-**Important**: For production use, deploy each environment to a **separate AWS account**:
-- **Test** → AWS Account A (e.g., 111111111111)
-- **Staging** → AWS Account B (e.g., 222222222222)
-- **Production** → AWS Account C (e.g., 333333333333)
+- Current-month actual spend: **A$0.0006** (US$0.00038 × 1.55)
+- Current-month forecast: **A$0.0006** (US$0.00038 × 1.55)
 
-**Why?**
-- Security isolation between environments
-- Blast radius containment
-- Compliance requirements (SOC2, ISO 27001, etc.)
-- Cost separation and tracking
+> This is account-level Cost Explorer data and may include AWS usage unrelated to this repository. Cost Explorer is **not** queried during documentation refresh — each Cost Explorer API call incurs a fee — so this value is a manual snapshot and is refreshed on an as-needed basis.
 
-### Setup (4 Steps - 5 minutes)
+## Repo Layout
 
-#### 1. Copy the starter kit
+| Path | Description |
+| --- | --- |
+| `bootstrap/account/` | Account bootstrap stack: OIDC provider for GitHub Actions (shared, reuses existing provider when present) |
+| `environments/test/` | Test environment root: IAM role consuming bootstrap OIDC, plus VPC/IAM/budgets sub-roots |
+| `modules/oidc-provider/` | Reusable OIDC provider + IAM role module |
+| `docs/` | Getting-started, architecture, and verification guidance |
+| `config/` | Explicit environment-to-account mapping (`environments.json`) |
+| `scripts/` | Setup and cleanup helper scripts |
+| `.github/workflows/` | CI/CD and documentation workflows |
 
-1. Click the green ["Use this template"](https://github.com/new?template_name=aws-terraform-starter-kit&template_owner=towardsthecloud) button to create a new repository based on this starter kit.
+## Remote State
 
-#### 2. Install required tools
+State is stored in an S3 bucket in `us-east-1` with server-side encryption and native S3 lockfile locking. Each root module uses a distinct state key:
+
+| Root | State key |
+| --- | --- |
+| `bootstrap/account` | `bootstrap/account/terraform.tfstate` |
+| `environments/test` | `environments/test/terraform.tfstate` |
+
+A missing backend key defaults to `terraform.tfstate` and silently collides with other modules — every root module must set an explicit `key` in its `backend "s3"` block.
+
+## Quick Start
+
+Prerequisites:
+
+- AWS account with credentials for the target account
+- GitHub repository with admin access
+- Tools installed via `make install-tools` (Terraform, AWS CLI, jq, TFLint, Checkov)
+
+Verify identity, then bootstrap:
 
 ```bash
-make install-tools  # Installs Terraform, AWS CLI, TFLint, Checkov, Granted
-```
-
-#### 3. Configure AWS Credentials
-
-```bash
-# Option A: AWS CLI
-aws configure
-
-# Option B: Granted (for multiple accounts)
-assume <profile-name>
-
-# Verify you are connected to AWS in the CLI
 aws sts get-caller-identity
-```
-
-#### 4. Run Setup to provision your Terraform project
-
-```bash
 make setup
-# Or: ./scripts/setup.sh
 ```
 
-**What happens:**
-1. ✅ Verifies prerequisites e.g. dev tools
-2. ✅ Creates S3 backend with native state locking (no DynamoDB needed)
-3. ✅ Creates account bootstrap stack (`bootstrap/account`) for shared OIDC provider lifecycle
-4. ✅ Provisions environment stack (test/staging/production) with IAM role + Terraform config
-5. ✅ Writes/updates explicit account mapping in `config/environments.json`
-6. ✅ Generates GitHub workflow files with account guardrails
+Or apply a single environment root manually:
 
-**Multi-Account Setup:**
 ```bash
-# Test account
-assume test-account
-make setup  # Select: test
-
-# Staging account
-assume staging-account
-make setup  # Select: staging
-
-# Production account
-assume prod-account
-make setup  # Select: production
+terraform -chdir=bootstrap/account init
+terraform -chdir=bootstrap/account apply
+terraform -chdir=environments/test init
+terraform -chdir=environments/test apply
 ```
 
-### Configure GitHub (2 minutes)
+No `.tfvars` are committed. Set variables via environment or CLI flags. See [docs/getting-started.md](docs/getting-started.md) for the full setup.
 
-#### A. Environment Mapping (Required)
+## Documentation
 
-Setup stores environment mappings in `config/environments.json`.  
-Commit this file so account/region/state/role mappings are explicit and reviewed.
+- [Getting Started](docs/getting-started.md) — credentials, backend setup, and deployment workflow
+- [Architecture](docs/architecture.md) — bootstrap stack, environments, OIDC trust flow, remote state
+- [Verification](docs/verification.md) — validation commands, tool sources, and assumptions
+- [Module: oidc-provider](modules/oidc-provider/README.md) — OIDC provider + IAM role module
 
-Example:
+### Module Documentation
 
-```json
-{
-  "environments": {
-    "test": {
-      "account_id": "111111111111",
-      "region": "us-east-1",
-      "state_bucket": "terraform-state-111111111111-us-east-1",
-      "role_name": "GitHubActionsServiceRole-Terraform"
-    }
+<!-- BEGIN_TF_DOCS oidc-provider -->
+# oidc-provider Module
+
+Terraform module that provisions a GitHub Actions OIDC provider and IAM role, enabling secure keyless authentication for GitHub Actions workflows. Can reuse an existing OIDC provider when one is already configured in the account.
+
+## Usage
+
+```hcl
+module "oidc_provider" {
+  source = "../../modules/oidc-provider"
+
+  use_existing_oidc_provider = true
+  github_repo                = "<owner>/<repo>"
+  role_name                  = "GitHubActionsServiceRole-Terraform"
+
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AdministratorAccess"
+  ]
+
+  tags = {
+    Environment = "test"
+    ManagedBy   = "terraform"
   }
 }
 ```
 
-#### B. Environment Protection (Production)
+The IAM role trusts the GitHub Actions OIDC provider with a subject claim scoped to `github_repo` (`repo:<owner>/<repo>:*`) and an audience of `sts.amazonaws.com`. See [docs/architecture.md](../../docs/architecture.md) for the trust flow.
 
-1. Go to **Settings** → **Environments** → **production**
-2. Add required reviewers
-3. Set deployment branches to `main` only
+## Security Considerations
 
-### Test It (1 minute)
+- **Least privilege**: attach only the minimum managed or inline policies the role needs.
+- **Repository scope**: the trust policy subject is scoped to the specific repository.
+- **Branch control**: restrict subjects further (e.g., `repo:<owner>/<repo>:ref:refs/heads/main`) for read-after-apply workflows.
+- **Session duration**: keep `max_session_duration` as short as practical.
 
-```bash
-git checkout -b test-deployment
-# Make a small change to environments/test/main.tf
-git add . && git commit -m "test: verify pipeline"
-git push origin test-deployment
-```
+## Requirements
 
-✅ GitHub Actions runs automatically
-✅ TFLint + Checkov scan
-✅ Security scans fail closed before deploy
-✅ Terraform plan posted to PR
-✅ Merge to deploy
+<!-- BEGIN_TF_DOCS -->
+## Requirements
 
-## 📚 Full Documentation
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
-For detailed information including project structure, common commands, troubleshooting, and best practices, visit the **[→ official documentation](https://towardsthecloud.com/docs/aws-terraform-starter-kit)**.
+## Providers
 
-## Module Documentation
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 
-### VPC
+## Modules
 
-<!-- BEGIN_TF_DOCS vpc -->
-<!-- END_TF_DOCS vpc -->
+No modules.
 
-### IAM
+## Resources
 
-<!-- BEGIN_TF_DOCS iam -->
-<!-- END_TF_DOCS iam -->
+| Name | Type |
+|------|------|
+| [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider) | resource |
+| [aws_iam_role.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.github_actions_inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_iam_role_policy_attachment.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_openid_connect_provider.github_actions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_openid_connect_provider) | data source |
 
-### Budgets
+## Inputs
 
-<!-- BEGIN_TF_DOCS budgets -->
-<!-- END_TF_DOCS budgets -->
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_audience_list"></a> [audience\_list](#input\_audience\_list) | List of allowed audiences for the OIDC provider | `list(string)` | <pre>[<br/>  "sts.amazonaws.com"<br/>]</pre> | no |
+| <a name="input_github_repo"></a> [github\_repo](#input\_github\_repo) | GitHub repository name in the format 'owner/repo' | `string` | n/a | yes |
+| <a name="input_github_thumbprint"></a> [github\_thumbprint](#input\_github\_thumbprint) | GitHub OIDC thumbprint | `string` | `"6938fd4d98bab03faadb97b34396831e3780aea1"` | no |
+| <a name="input_inline_policies"></a> [inline\_policies](#input\_inline\_policies) | Map of inline policy names to policy documents (JSON strings) | `map(string)` | `{}` | no |
+| <a name="input_managed_policy_arns"></a> [managed\_policy\_arns](#input\_managed\_policy\_arns) | List of IAM managed policy ARNs to attach to the role | `list(string)` | `[]` | no |
+| <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum session duration in seconds (3600-43200) | `number` | `3600` | no |
+| <a name="input_path"></a> [path](#input\_path) | Path for the IAM role | `string` | `"/"` | no |
+| <a name="input_role_name"></a> [role\_name](#input\_role\_name) | Name of the IAM role for GitHub Actions | `string` | `"GitHubActionsServiceRole-Terraform"` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to resources | `map(string)` | `{}` | no |
+| <a name="input_use_existing_oidc_provider"></a> [use\_existing\_oidc\_provider](#input\_use\_existing\_oidc\_provider) | Whether to use an existing OIDC provider instead of creating a new one | `bool` | `false` | no |
 
-## Author
+## Outputs
 
-[Danny Steenman](https://towardsthecloud.com/about)
+| Name | Description |
+|------|-------------|
+| <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | ARN of the GitHub Actions OIDC provider |
+| <a name="output_oidc_provider_url"></a> [oidc\_provider\_url](#output\_oidc\_provider\_url) | URL of the GitHub Actions OIDC provider |
+| <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the GitHub Actions IAM role |
+| <a name="output_role_id"></a> [role\_id](#output\_role\_id) | ID of the GitHub Actions IAM role |
+| <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Name of the GitHub Actions IAM role |
+| <a name="output_role_unique_id"></a> [role\_unique\_id](#output\_role\_unique\_id) | Unique ID of the GitHub Actions IAM role |
+<!-- END_TF_DOCS -->
+<!-- END_TF_DOCS oidc-provider -->
 
-[![](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/towardsthecloud)
-[![](https://img.shields.io/badge/X-000000?style=for-the-badge&logo=x&logoColor=white)](https://twitter.com/dannysteenman)
-[![](https://img.shields.io/badge/GitHub-2b3137?style=for-the-badge&logo=github&logoColor=white)](https://github.com/towardsthecloud)
+## Verification
+
+Module and repository documentation were verified using:
+
+- **Terraform Registry** — `hashicorp/aws` provider resource and data-source types confirmed
+- **Terraform Best Practices MCP** — README structure, naming, and backend conventions validated at `https://www.terraform-best-practices.com/~gitbook/mcp`
+- **Terraform** — `terraform fmt -check -recursive`, `terraform validate` for all roots
+- **TFLint** — recursive scan clean
+- **Checkov** — security scan, fail-closed for deployments
+- **AWS CLI** — read-only confirmation of live IAM, S3, budgets, and OIDC state (identifiers redacted)
+
+See [docs/verification.md](docs/verification.md) for the exact commands and tool versions used.
