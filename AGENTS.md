@@ -11,5 +11,5 @@
 ## Validation
 
 - Prefer the Terraform Best Practices MCP endpoint at `https://www.terraform-best-practices.com/~gitbook/mcp` for Terraform documentation and best-practice validation.
-- Prefer the AWS MCP server for AWS read-only interactions; use the AWS CLI directly when the MCP server is unavailable.
+- Prefer the AWS CLI for AWS read-only interactions; use the AWS MCP directly when the CLI is unavailable.
 - Document only tools and checks that were actually used.
