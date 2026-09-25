@@ -1,9 +1,9 @@
 # Execution Report: AWS Documentation Refresh
 
 Documents execution of the approved plan
-[`docs/superpowers/plans/2026-09-18-aws-documentation-refresh.md`](../docs/superpowers/plans/2026-09-18-aws-documentation-refresh.md)
+[`plans/2026-09-18-aws-documentation-refresh.md`](../plans/2026-09-18-aws-documentation-refresh.md)
 and design
-[`docs/superpowers/specs/2026-09-18-aws-documentation-refresh-design.md`](../docs/superpowers/specs/2026-09-18-aws-documentation-refresh-design.md).
+[`specs/2026-09-18-aws-documentation-refresh-design.md`](../specs/2026-09-18-aws-documentation-refresh-design.md).
 
 **Goal:** Replace the starter-kit README with accurate, sensitive-value-safe
 documentation for the deployed AWS infrastructure, add focused `docs/` guidance,
