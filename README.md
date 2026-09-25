@@ -1,11 +1,11 @@
-# AWS Terraform
+# AWS dev environment
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![TFLint](https://img.shields.io/badge/linting-tflint-blue.svg?style=flat)](https://github.com/terraform-linters/tflint)
 [![Checkov](https://img.shields.io/badge/security-checkov-brightgreen.svg?style=flat)](https://www.checkov.io/)
 
-Terraform code for the Walkable development environment on AWS. It sets up the test environment, supports multiple environments, and automates deployments.
+Terraform code for Walkable LLC's dev environment on AWS. It sets up the test environment, supports multiple environments, and automates deployments.
 
 - Sets up the test environment with Terraform.
 - Uses GitHub Actions OIDC, so CI does not need long-lived AWS keys.
