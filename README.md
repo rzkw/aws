@@ -1,11 +1,11 @@
-# AWS Terraform
+# AWS 
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![TFLint](https://img.shields.io/badge/linting-tflint-blue.svg?style=flat)](https://github.com/terraform-linters/tflint)
 [![Checkov](https://img.shields.io/badge/security-checkov-brightgreen.svg?style=flat)](https://www.checkov.io/)
 
-Terraform-managed infrastructure for the Walkable development environment on AWS.
+Terraform-managed infra for Walkable LLC's internal dev environment on AWS.
 
 - Secure GitHub Actions OIDC authentication for CI/CD deployments
 - Multi-environment layout with explicit environment-to-account mapping
