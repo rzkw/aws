@@ -1,38 +1,40 @@
 # Security
 
-This repository uses short-lived AWS credentials and keeps sensitive values out of documentation.
+This repository uses short-lived AWS credentials for CI and keeps Terraform state in S3. Keep permissions narrow and keep sensitive values out of Git.
 
-## CI Authentication
+## CI access
 
-- GitHub Actions uses OIDC to sign in to AWS.
-- The trust policy is limited to this repository and accepts the audience `sts.amazonaws.com`.
-- Workflows do not need long-lived AWS access keys.
+- GitHub Actions uses OIDC to exchange a signed token for temporary AWS credentials. Workflows do not need long-lived AWS access keys.
+- The role trust policy checks the repository subject and the `sts.amazonaws.com` audience. Keep the repository, branch, and environment scope as narrow as practical.
+- Keep `id-token: write` only for jobs that assume the AWS role.
+- Review the managed and inline policies attached to the CI role. Grant only the actions needed by the test environment.
+- Pull requests may run validation and plans; apply runs only from `main`. Do not broaden that boundary without reviewing the trust policy.
 
-## Local Setup
+## Human and account access
+
+- Prefer IAM Identity Center or another identity provider for human access, with temporary credentials.
+- Do not use the AWS root user for routine work. Protect root credentials and any required long-term credentials with MFA, and keep them outside the repository.
+- Review and remove unused IAM users, roles, policies, and access keys. Use last-accessed data and IAM Access Analyzer when available.
+
+## Local access
 
 - Run `aws sts get-caller-identity` before making changes and confirm the account and role match the target environment.
-- Never commit AWS credentials or `.tfvars` files.
-- Pass Terraform values through environment variables such as `TF_VAR_*` or through CLI flags.
+- Never commit credentials, tokens, private keys, `.tfvars`, state files, or plan files.
+- Pass Terraform values through `TF_VAR_*` environment variables or CLI flags.
 
-## State Protection
+## Terraform state
 
-Terraform state is stored in S3 in `us-east-1` with server-side encryption (AES256), versioning, and native `.tflock` locking.
+- State is stored in encrypted and versioned S3 with native `.tflock` locking.
+- Every Terraform root must set an explicit state `key` so roots cannot share the default `terraform.tfstate` file.
+- Do not expose state bucket names or other sensitive AWS identifiers in documentation.
 
-Every Terraform root must set an explicit state `key`. Without one, Terraform uses `terraform.tfstate`, so different roots could share the same state.
+## Checks and documentation
 
-## Required Checks
-
-TFLint and Checkov run in CI as required checks. If either check fails, deployment stops.
-
-## Documentation Safety
-
+- TFLint and Checkov run as required CI checks. If either check fails, deployment stops.
 - Never write credentials, tokens, private keys, account IDs, ARNs, resource IDs, or state bucket names to repository files.
-- Use placeholders such as `<aws-account-id>`, `<state-bucket>`, and `<role-arn>` in examples.
-- Redact AWS output before saving it.
+- Use placeholders such as `<aws-account-id>`, `<state-bucket>`, and `<role-arn>` in examples, and redact AWS output before saving it.
 - Follow the repository rules in [AGENTS.md](../AGENTS.md).
 
-## Related Documentation
+## References
 
-- [Getting Started](getting-started.md)
-- [Architecture](architecture.md)
-- [Verification](verification.md)
+- [AWS IAM security best practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.md)
