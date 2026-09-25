@@ -65,5 +65,6 @@ checkov -d modules/oidc-provider --config-file .checkov.yml
 - Never force-push. `git push --force` is forbidden. Use `--force-with-lease` only when a force update is unavoidable.
 - When review requests changes, add a new commit and push it normally.
 - Always use the repository's pull request template (`.github/pull_request_template.md`) when submitting a pull request.
+- Rebase the PR branch onto the latest base branch and push before opening or updating a pull request, so the branch is never out of date at merge time.
 - Every PR must list `rzkw` as a reviewer. Keep `* @rzkw` in `.github/CODEOWNERS`; restore the file if it is missing. Never remove that rule.
 - Sign every commit with `~/.ssh/agent-gh-signing` and verify the signature before pushing.
