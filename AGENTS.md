@@ -12,7 +12,7 @@
 - Before a non-trivial feature, refactor, or infrastructure change, write a dated plan in `plans/`.
 - Get the repository owner's approval and land the plan through a PR before implementation.
 - Keep each new plan and report under 500 words, including references.
-- Add a `References` section to every new plan and report. Prefer official documentation, engineering blogs, and sysadmin blogs. Do not use academic papers.
+- Add a `References` section to every new plan and report. Prefer official documentation, engineering blogs. Do not use academic papers.
 - Put reports in `reports/` and link the plan, PR, and commits.
 - Use simple English in all documentation, plans, reports, README files, code comments, commit messages, PR titles, and PR descriptions, including this file.
 - Do not commit `.tfvars`, Terraform state, plan files, credentials, or other secrets.
