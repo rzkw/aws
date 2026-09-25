@@ -192,6 +192,7 @@ No modules.
 Module and repository documentation were verified using:
 
 - **Terraform Registry** — `hashicorp/aws` provider resource and data-source types confirmed
+- **AWS Knowledge MCP** — deployed infrastructure facts validated at `https://knowledge-mcp.global.api.aws`
 - **Terraform Best Practices MCP** — README structure, naming, and backend conventions validated at `https://www.terraform-best-practices.com/~gitbook/mcp`
 - **Terraform** — `terraform fmt -check -recursive`, `terraform validate` for all roots
 - **TFLint** — recursive scan clean
