@@ -92,11 +92,19 @@ No `.tfvars` are committed. Set variables via environment or CLI flags. See [doc
 - [Verification](docs/verification.md) — validation commands, tool sources, and assumptions
 - [Module: oidc-provider](modules/oidc-provider/README.md) — OIDC provider + IAM role module
 
+## Security Considerations
+
+- **Least privilege**: attach only the minimum managed or inline policies the role needs.
+- **Repository scope**: the trust policy subject is scoped to the specific repository.
+- **Branch control**: restrict subjects further (e.g., `repo:<owner>/<repo>:ref:refs/heads/main`) for read-after-apply workflows.
+- **Session duration**: keep `max_session_duration` as short as practical.
+
 ## Verification
 
 Module and repository documentation were verified using:
 
 - **Terraform Registry** — `hashicorp/aws` provider resource and data-source types confirmed
+- **AWS Knowledge MCP** — deployed infrastructure facts validated at `https://knowledge-mcp.global.api.aws`
 - **Terraform Best Practices MCP** — README structure, naming, and backend conventions validated at `https://www.terraform-best-practices.com/~gitbook/mcp`
 - **Terraform** — `terraform fmt -check -recursive`, `terraform validate` for all roots
 - **TFLint** — recursive scan clean
