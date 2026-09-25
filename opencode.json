@@ -1,0 +1,40 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "aws-mcp": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--metadata",
+        "INSTALL_SOURCE=aws-cli"
+      ],
+      "environment": {
+        "AWS_MCP_PROXY_PROFILES": "default"
+      },
+      "enabled": true
+    },
+    "terraform": {
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server:1.3.0"
+      ],
+      "enabled": true
+    },
+    "terraform-best-practices": {
+      "type": "remote",
+      "url": "https://www.terraform-best-practices.com/~gitbook/mcp",
+      "enabled": true
+    },
+    "aws-knowledge": {
+      "type": "remote",
+      "url": "https://knowledge-mcp.global.api.aws",
+      "enabled": true
+    }
+  }
+}
