@@ -19,6 +19,18 @@ graph LR
   TF[Terraform] -. state read/write .-> BUCKET
 ```
 
+## Repository Layout
+
+| Path | Description |
+| --- | --- |
+| `bootstrap/account/` | Account setup: the shared OIDC provider for GitHub Actions |
+| `environments/test/` | Test environment: the IAM role and the VPC, IAM, and budget stacks |
+| `modules/oidc-provider/` | Reusable OIDC provider and IAM role module |
+| `docs/` | Setup, architecture, security, and verification guidance |
+| `config/` | Environment-to-account mapping in `environments.json` |
+| `scripts/` | Setup and cleanup helper scripts |
+| `.github/workflows/` | CI/CD and documentation workflows |
+
 ## Bootstrap Stack (`bootstrap/account`)
 
 - Creates the GitHub Actions OIDC provider (`token.actions.githubusercontent.com`) unless an existing provider is reused.
@@ -39,6 +51,8 @@ graph LR
 | --- | --- |
 | `bootstrap/account` | `bootstrap/account/terraform.tfstate` |
 | `environments/test` | `environments/test/terraform.tfstate` |
+
+Every root must set an explicit `key`. Without one, Terraform uses `terraform.tfstate`, so different roots could share the same state.
 
 ## OIDC Trust Flow
 
