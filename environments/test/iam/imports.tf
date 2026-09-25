@@ -49,11 +49,6 @@ import {
 }
 
 import {
-  to = aws_iam_group_policy_attachment.read_only_read_only_access
-  id = "read-only/arn:aws:iam::aws:policy/ReadOnlyAccess"
-}
-
-import {
   to = aws_iam_user_policy_attachment.rzkw_iam_user_change_password
   id = "rzkw-iam/arn:aws:iam::aws:policy/IAMUserChangePassword"
 }
