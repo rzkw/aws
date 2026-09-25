@@ -2,9 +2,9 @@
 
 > **For review:** This document is a proposed implementation. It does not change AWS resources by itself.
 
-**Goal:** Give `agent-walkllc` read-only access through the existing `read-only` group and explicitly deny IAM and infrastructure creation or escalation actions.
+**Goal:** Give `agent-walkllc` read-only access through the existing `read-only` group. Explicitly deny IAM and infrastructure creation or escalation actions, and deny AWS Management Console access.
 
-**Approach:** Keep AWS-managed `ViewOnlyAccess` as the only allow policy. Add one small customer-managed deny policy to the same group. Do not grant CloudShell access. Keep the existing user-to-group membership.
+**Approach:** Keep AWS-managed `ViewOnlyAccess` as the only allow policy. Add one small customer-managed deny policy to the same group. Deny console access by removing the console password (login profile) and blocking its recreation. Do not grant CloudShell access. Keep the existing user-to-group membership.
 
 **Important scope:** `ViewOnlyAccess` is account-wide read-only access. The requested design intentionally allows viewing current and future resources across the account, but grants no write access. AWS-managed policies cannot be limited to only resources that exist today.
 
@@ -13,6 +13,7 @@
 - Modify: `environments/test/iam/main.tf`
 - Modify: `environments/test/iam/imports.tf`
 - Create: `environments/test/iam/policies/agent-view-only-deny-mutations.json`
+- Out of band (account owner, not managed by Terraform): remove the `agent-walkllc` console password; create and distribute CLI access keys.
 
 ## Policy Draft
 
@@ -29,8 +30,6 @@ Create `environments/test/iam/policies/agent-view-only-deny-mutations.json` with
         "iam:CreateUser",
         "iam:UpdateUser",
         "iam:DeleteUser",
-        "iam:CreateLoginProfile",
-        "iam:UpdateLoginProfile",
         "iam:DeleteLoginProfile",
         "iam:CreateAccessKey",
         "iam:UpdateAccessKey",
@@ -41,6 +40,16 @@ Create `environments/test/iam/policies/agent-view-only-deny-mutations.json` with
         "iam:UploadSSHPublicKey",
         "iam:UpdateSSHPublicKey",
         "iam:DeleteSSHPublicKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "DenyConsoleAccess",
+      "Effect": "Deny",
+      "Action": [
+        "iam:CreateLoginProfile",
+        "iam:UpdateLoginProfile",
+        "iam:ChangePassword"
       ],
       "Resource": "*"
     },
@@ -172,15 +181,22 @@ In `environments/test/iam/imports.tf`:
 
 The existing attachment address is already in state from the previous import. The implementation must preserve that state during the policy replacement; it must not orphan or recreate the `read-only` group.
 
+### Console and CLI credentials
+
+- The `agent-walkllc` console password (login profile) is not managed in Terraform. The account owner removes it out of band with `aws iam delete-login-profile`. Recreating it is blocked by the `DenyConsoleAccess` policy statement.
+- CLI access keys for `agent-walkllc` are created and distributed out of band by the account owner. They are not imported into Terraform, so credentials stay out of Terraform state.
+
 ## Implementation Steps
 
-1. Add the policy JSON exactly as shown above.
-2. Replace the group’s `ReadOnlyAccess` attachment with `ViewOnlyAccess`.
-3. Add the deny-only customer-managed policy and attach it to `read-only`.
-4. Keep the existing user-group membership.
-5. Confirm that no CloudShell policy is added.
-6. Validate the policy with IAM Access Analyzer policy validation.
-7. Review the Terraform plan for only these IAM changes:
+1. The account owner removes the console password: `aws iam delete-login-profile --user-name agent-walkllc`.
+2. Verify the login profile no longer exists: `aws iam get-login-profile --user-name agent-walkllc` returns `NoSuchEntity`.
+3. Add the policy JSON exactly as shown above.
+4. Replace the group’s `ReadOnlyAccess` attachment with `ViewOnlyAccess`.
+5. Add the deny-only customer-managed policy and attach it to `read-only`.
+6. Keep the existing user-group membership.
+7. Confirm that no CloudShell policy is added.
+8. Validate the policy with IAM Access Analyzer policy validation.
+9. Review the Terraform plan for only these IAM changes:
    - Remove `ReadOnlyAccess` from `read-only`.
    - Add `ViewOnlyAccess` to `read-only`.
    - Create and attach `agent-walkllc-view-only-deny-mutations`.
@@ -188,10 +204,13 @@ The existing attachment address is already in state from the previous import. Th
 
 ## Security Result
 
-`agent-walkllc` will be able to inspect AWS resources through the AWS CLI or other AWS API clients using its normal credentials. It will not receive CloudShell access.
+`agent-walkllc` will be able to inspect AWS resources through the AWS CLI or other AWS API clients using its access keys. It will not receive CloudShell access.
+
+AWS Management Console access is denied: the user has no console password (removed out of band) and cannot create or update login credentials or change a password (`iam:CreateLoginProfile`, `iam:UpdateLoginProfile`, `iam:ChangePassword`).
 
 The explicit deny blocks:
 
+- AWS Management Console access (login profile removal and blocked recreation).
 - IAM users, groups, roles, and service-linked-role changes.
 - IAM policy creation, deletion, version changes, attachment, and inline-policy changes.
 - Access-key, login-profile, service-specific-credential, and SSH-key changes.
@@ -205,6 +224,8 @@ Because the deny is attached to the group, it applies to `agent-walkllc` through
 
 ## References
 
+- [Control IAM user access to the AWS Management Console](https://docs.aws.amazon.com/IAM/latest/UserGuide/console_controlling-access.html)
+- [AWS CLI `delete-login-profile`](https://docs.aws.amazon.com/cli/latest/reference/iam/delete-login-profile.html)
 - [ViewOnlyAccess AWS-managed policy](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/ViewOnlyAccess.html)
 - [AWS managed policies for job functions](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_job-functions.html)
 - [IAM policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)
@@ -220,8 +241,10 @@ Because the deny is attached to the group, it applies to `agent-walkllc` through
 
 - Confirmed `agent-walkllc` is already a member of `read-only`.
 - Confirmed the current group attachment is `ReadOnlyAccess`.
+- Confirmed `agent-walkllc` currently has a console password (login profile) and no access keys; the verification calls in this draft run as `rzkw-iam`.
 - Confirmed `AWSCloudShellFullAccess` is not part of the proposed configuration.
 - Confirmed `ViewOnlyAccess` is an AWS-managed policy with read-only actions.
 - Confirmed AWS policy evaluation gives explicit denies precedence over allows.
-- Confirmed the proposed EC2, NAT gateway, EKS, IAM, access-key, and permissions-boundary actions are IAM actions documented by AWS service authorization references.
+- Confirmed the proposed EC2, NAT gateway, EKS, IAM, access-key, login-profile, and permissions-boundary actions are IAM actions documented by AWS service authorization references.
+- Confirmed the updated policy JSON validates with IAM Access Analyzer and returns no findings.
 - Confirmed the repository uses Terraform AWS provider version `~> 6.0` in the IAM environment.
