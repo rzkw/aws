@@ -7,12 +7,11 @@ on:
     branches: [main]
     paths:
       - 'modules/**'
-      - 'README.md'
   workflow_dispatch:
 
 jobs:
   docs:
-    name: Generate and assemble module docs
+    name: Generate module docs
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -36,27 +35,6 @@ jobs:
           output-method: inject
           git-push: false
 
-      - name: Assemble docs into root README
-        run: |
-          python3 << 'EOF'
-          import glob, os
-          for mod_readme in sorted(glob.glob('modules/*/README.md')):
-              mod = os.path.basename(os.path.dirname(mod_readme))
-              with open(mod_readme) as f:
-                  content = f.read()
-              with open('README.md') as f:
-                  root = f.read()
-              marker_start = f'<!-- BEGIN_TF_DOCS {mod} -->'
-              marker_end = f'<!-- END_TF_DOCS {mod} -->'
-              si = root.find(marker_start)
-              ei = root.find(marker_end)
-              if si != -1 and ei != -1:
-                  si += len(marker_start)
-                  root = root[:si] + '\n' + content + '\n' + root[ei:]
-              with open('README.md', 'w') as f:
-                  f.write(root)
-          EOF
-
       - name: Import signing key and configure git
         run: |
           mkdir -p ~/.ssh
@@ -70,6 +48,6 @@ jobs:
         run: |
           git config user.name 'agent-walkllc'
           git config user.email 'agent-walkllc@users.noreply.github.com'
-          git add README.md modules/*/README.md
+          git add modules/*/README.md
           git diff --cached --quiet || git commit -m 'chore: auto-update module docs'
           git push

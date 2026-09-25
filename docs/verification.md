@@ -3,8 +3,9 @@
 ## Tool Sources
 
 - **Terraform Registry** — `hashicorp/aws` provider documentation for resource and data-source types used by the modules (`https://registry.terraform.io/providers/hashicorp/aws/latest`).
+- **AWS Knowledge MCP** — official AWS documentation for OIDC, S3 remote-state locking, and versioning validated at `https://knowledge-mcp.global.api.aws` (`aws___search_documentation` and `aws___read_documentation` tools).
 - **Terraform Best Practices MCP** — README structure, naming, and backend conventions validated at `https://www.terraform-best-practices.com/~gitbook/mcp`.
-- **AWS CLI** — read-only confirmation of live resources (identifiers redacted). Prefer the AWS MCP server when available.
+- **AWS CLI** — read-only confirmation of live resources (identifiers redacted).
 
 ## Commands
 
@@ -35,8 +36,8 @@ AWS Cost Explorer is **not** queried during documentation refresh: each Cost Exp
 
 | Fact | Source |
 | --- | --- |
-| OIDC provider / IAM role | `aws iam list-open-id-connect-providers`, `aws iam get-role` |
-| S3 state bucket | `aws s3api get-bucket-versioning`, `get-bucket-encryption` |
+| OIDC provider / IAM role | AWS Knowledge MCP + `aws iam list-open-id-connect-providers`, `aws iam get-role` |
+| S3 state bucket | AWS Knowledge MCP + `aws s3api get-bucket-versioning`, `get-bucket-encryption` |
 | Budgets | `aws budgets describe-budgets` |
 | Cost snapshot | AWS Cost Explorer (manual, read-only; not run in CI) |
 
