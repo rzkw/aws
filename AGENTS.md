@@ -20,7 +20,7 @@
 ## AWS Tools
 
 - Use the AWS CLI or direct AWS API tools first for live AWS reads and account operations. Start with `aws sts get-caller-identity` when the target account is uncertain.
-- Use `aws-knowledge` only for official AWS documentation, API behavior, regional availability, AWS best practices, and AWS agent skills. Do not use it to inspect account state.
+- Use `aws-knowledge` only for official AWS documentation, API behavior, regional availability, AWS best practices, and AWS agent skills. Do not use it to inspect account state. The AWS knowledge MCP endpoint is `https://knowledge-mcp.global.api.aws`; use its `aws___search_documentation` and `aws___read_documentation` tools.
 - Use `aws-mcp` only when the AWS CLI or API tools are unavailable, or when the task specifically needs MCP sandboxing or audit features.
 - Keep AWS calls read-only unless the user explicitly approves a change.
 - Redact account IDs, ARNs, resource IDs, state bucket names, credentials, and sensitive API output before writing it to a file, log, commit message, or PR.

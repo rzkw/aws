@@ -60,6 +60,7 @@ generated timestamp.
   modified.
 - `terraform-docs v0.19.0` - module README section generated and assembled into
   the root README; marker replacement verified locally.
+- **AWS Knowledge MCP** (`https://knowledge-mcp.global.api.aws`) - `aws___search_documentation` used to confirm official AWS facts: GitHub Actions OIDC audience `sts.amazonaws.com`, S3 native `.tflock` state locking (Terraform 1.10+, no DynamoDB), and S3 bucket versioning behavior.
 - **Terraform Best Practices MCP** (`https://www.terraform-best-practices.com/~gitbook/mcp`,
   v0.27.2) - `searchDocumentation` used to confirm naming and code-structure
   conventions against the generated README.
