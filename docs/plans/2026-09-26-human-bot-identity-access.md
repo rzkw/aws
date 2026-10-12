@@ -10,9 +10,9 @@
 - The organization and Identity Center instance are a one-time console bootstrap. The AWS provider exposes the instance only as a data source, so there is nothing to manage for it in Terraform. (edit 12/10 @rzkw: done)
 - No inline `sts:AssumeRole` policy is added: `AdministratorAccess` already allows it.
 - The agent role trust uses a wildcard on `AWSReservedSSO_*` roles instead of pinning the unknown SSO role ARN hash.
-- The existing `agent-view-only-deny-mutations` policy is reused and attached to the role; no new policy files.
+- The existing `agent-view-only-deny-changes` policy is reused and attached to the role; no new policy files.
 - All new resources go into the existing `environments/test/iam/main.tf`.
-- Agent IAM user retirement happens after verification, in a later PR. (edit 12/10 @rzkw: agent iam user/role is to be kept for infra/policy/security inspections)
+- Agent IAM user retirement happens after verification, in a later PR. 
 
 ## Files
 
@@ -27,10 +27,10 @@ In `environments/test/iam/main.tf`, add:
 ```hcl
 data "aws_caller_identity" "current" {}
 
-data "aws_ssoadmin_instances" "this" {}
+data "aws_ssoadmin_instances" "sso_instance" {}
 
 resource "aws_identitystore_user" "rzkw" {
-  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+  identity_store_id = tolist(data.aws_ssoadmin_instances.sso_instance.identity_store_ids)[0]
 
   display_name = "rzkw"
   user_name    = "rzkw"
@@ -47,12 +47,12 @@ resource "aws_identitystore_user" "rzkw" {
 
 resource "aws_ssoadmin_permission_set" "terraform_admin" {
   name             = "TerraformAdministrator"
-  instance_arn     = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  instance_arn     = tolist(data.aws_ssoadmin_instances.sso_instance.arns)[0]
   session_duration = "PT12H"
 }
 
 resource "aws_ssoadmin_account_assignment" "terraform_admin_rzkw" {
-  instance_arn       = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  instance_arn       = tolist(data.aws_ssoadmin_instances.sso_instance.arns)[0]
   permission_set_arn = aws_ssoadmin_permission_set.terraform_admin.arn
 
   principal_id   = aws_identitystore_user.rzkw.user_id
@@ -65,7 +65,7 @@ resource "aws_ssoadmin_account_assignment" "terraform_admin_rzkw" {
 resource "aws_ssoadmin_managed_policy_attachment" "terraform_admin" {
   depends_on = [aws_ssoadmin_account_assignment.terraform_admin_rzkw]
 
-  instance_arn       = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  instance_arn       = tolist(data.aws_ssoadmin_instances.sso_instance.arns)[0]
   permission_set_arn = aws_ssoadmin_permission_set.terraform_admin.arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
@@ -96,9 +96,9 @@ resource "aws_iam_role_policy_attachment" "agent_view_only" {
   policy_arn = "arn:aws:iam::aws:policy/job-function/ViewOnlyAccess"
 }
 
-resource "aws_iam_role_policy_attachment" "agent_view_only_deny_mutations" {
+resource "aws_iam_role_policy_attachment" "agent_view_only_deny_changes" {
   role       = aws_iam_role.agent_view_only.name
-  policy_arn = aws_iam_policy.agent_view_only_deny_mutations.arn
+  policy_arn = aws_iam_policy.agent_view_only_deny_changes.arn
 }
 ```
 
@@ -128,11 +128,11 @@ role_arn = arn:aws:iam::<account-id>:role/agent-view-only
 
 6. Set `AWS_PROFILE=agent-view-only` for the OpenCode harness environment.
 7. Verify identity scope: `aws sts get-caller-identity` under `aws-admin` shows the SSO user; under `agent-view-only` it shows the role and `ViewOnlyAccess` permits.
-8. Later, after verification, retire the `agent-walkllc` IAM user, `read-only` group, and memberships in a separate PR. The deny-mutations policy stays and is reused by the role.
+8. Later, after verification, retire the `agent-walkllc` IAM user, `read-only` group, and memberships in a separate PR. The deny-changes policy stays and is reused by the role.
 
 ## Security Result
 
-The human logs in once per session and Terraform uses temporary credentials. The harness has no IAM user, no password, and no access keys. It can only view resources through `ViewOnlyAccess` plus the existing deny-mutations policy. GitHub collaborator access for `agent-walkllc` is unchanged.
+The human logs in once per session and Terraform uses temporary credentials. The harness has no IAM user, no password, and no access keys. It can only view resources through `ViewOnlyAccess` plus the existing deny-changes policy. GitHub collaborator access for `agent-walkllc` is unchanged.
 
 ## References
 
