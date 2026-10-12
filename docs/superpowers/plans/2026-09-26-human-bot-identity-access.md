@@ -7,12 +7,12 @@
 **Approach:** Bootstrap a single-account AWS organization and the IAM Identity Center organization instance once in the console. Terraform then manages the Identity Center user, the `TerraformAdministrator` permission set, the account assignment, and a new `agent-view-only` IAM role. The harness assumes the role from the operator's SSO profile, so it never holds access keys.
 
 **Scope decisions (kept small on purpose):**
-- The organization and Identity Center instance are a one-time console bootstrap. The AWS provider exposes the instance only as a data source, so there is nothing to manage for it in Terraform.
+- The organization and Identity Center instance are a one-time console bootstrap. The AWS provider exposes the instance only as a data source, so there is nothing to manage for it in Terraform. (edit 12/10 @rzkw: done)
 - No inline `sts:AssumeRole` policy is added: `AdministratorAccess` already allows it.
 - The agent role trust uses a wildcard on `AWSReservedSSO_*` roles instead of pinning the unknown SSO role ARN hash.
 - The existing `agent-view-only-deny-mutations` policy is reused and attached to the role; no new policy files.
 - All new resources go into the existing `environments/test/iam/main.tf`.
-- Agent IAM user retirement happens after verification, in a later PR.
+- Agent IAM user retirement happens after verification, in a later PR. (edit 12/10 @rzkw: agent iam user/role is to be kept for infra/policy/security inspections)
 
 ## Files
 
