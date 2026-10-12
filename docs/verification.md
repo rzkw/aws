@@ -1,11 +1,16 @@
 # Verification
 
+The root README links here for the full setup and validation details.
+
 ## Tool Sources
 
 - **Terraform Registry** — `hashicorp/aws` provider documentation for resource and data-source types used by the modules (`https://registry.terraform.io/providers/hashicorp/aws/latest`).
 - **AWS Knowledge MCP** — official AWS documentation for OIDC, S3 remote-state locking, and versioning validated at `https://knowledge-mcp.global.api.aws` (`aws___search_documentation` and `aws___read_documentation` tools).
 - **Terraform Best Practices MCP** — README structure, naming, and backend conventions validated at `https://www.terraform-best-practices.com/~gitbook/mcp`.
-- **AWS CLI** — read-only confirmation of live resources (identifiers redacted).
+- **Terraform** — formatting checks and backend-free validation for each root.
+- **TFLint** — recursive lint checks for Terraform code.
+- **Checkov** — security checks that fail closed in the pipeline.
+- **AWS CLI** — read-only confirmation of live resources (identifiers redacted). Prefer the AWS MCP server when available.
 
 ## Commands
 

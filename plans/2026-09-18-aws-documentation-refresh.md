@@ -24,8 +24,8 @@
 
 **Files:**
 - Create: `AGENTS.md`
-- Create: `docs/superpowers/specs/2026-09-18-aws-documentation-refresh-design.md`
-- Create: `docs/superpowers/plans/2026-09-18-aws-documentation-refresh.md`
+- Create: `specs/2026-09-18-aws-documentation-refresh-design.md`
+- Create: `plans/2026-09-18-aws-documentation-refresh.md`
 
 **Interfaces:**
 - Produces repository-wide documentation safety rules consumed by all later tasks.
@@ -41,7 +41,7 @@ Check both documents for missing requirements, contradictory workflow behavior, 
 - [ ] **Step 3: Commit the planning documents**
 
 ```bash
-git add AGENTS.md docs/superpowers/specs/2026-09-18-aws-documentation-refresh-design.md docs/superpowers/plans/2026-09-18-aws-documentation-refresh.md
+git add AGENTS.md specs/2026-09-18-aws-documentation-refresh-design.md plans/2026-09-18-aws-documentation-refresh.md
 git commit -S -m "docs: plan AWS documentation refresh"
 ```
 
@@ -79,7 +79,7 @@ Write `docs/getting-started.md`, `docs/architecture.md`, and `docs/verification.
 Run:
 
 ```bash
-rg -n "874186497092|arn:aws:|terraform-state-[0-9]|AKIA|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|token=|password" README.md AGENTS.md docs modules
+rg -n "<aws-account-id>|arn:aws:|terraform-state-[0-9]|AKIA|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|token=|password" README.md AGENTS.md docs modules plans specs
 ```
 
 Expected: no matches except intentional placeholder or documentation text that does not contain a live value.
@@ -190,7 +190,7 @@ List Terraform Registry, Terraform Best Practices MCP, Terraform validation, TFL
 Run:
 
 ```bash
-rg -n "874186497092|arn:aws:|terraform-state-[0-9]|AKIA|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|token=|password" README.md AGENTS.md docs modules .github
+rg -n "<aws-account-id>|arn:aws:|terraform-state-[0-9]|AKIA|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|token=|password" README.md AGENTS.md docs modules plans specs .github
 git diff --check
 git status --short
 ```
