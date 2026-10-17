@@ -136,7 +136,7 @@ The human logs in once per session and Terraform uses temporary credentials. The
 
 ## Checkov Scan Amendment (added 2026-10-17)
 
-The Checkov CI scan for this PR failed 13 checks (14 with a newer local Checkov). All are resolved; the scan now exits 0 with 0 failed and 11 skipped checks.
+The Checkov CI scan for this PR failed 13 checks (14 with a newer local Checkov). All are resolved in code; the local scan now exits 0 with 0 failed and 11 skipped checks. The CI Checkov job itself still fails because it checks out the base branch instead of the PR head (a workflow defect found during review); that fix must land on `main` first, so the CI check only turns green after a re-run.
 
 **Fixed in code:**
 
@@ -148,13 +148,13 @@ The Checkov CI scan for this PR failed 13 checks (14 with a newer local Checkov)
 
 **Skipped with justification:**
 
-- CKV_AWS_8: no EBS volumes are attached; there is no data to encrypt.
-- CKV_AWS_135: no EBS volumes; EBS optimization is not applicable.
+- CKV_AWS_8: the root volume holds no sensitive data; this disposable test box skips volume encryption by operator decision. (Enabling it for real is one `root_block_device` block away if wanted later.)
+- CKV_AWS_135: this burstable test instance has no dedicated EBS throughput requirement; EBS optimization does not apply to it.
 - CKV_AWS_126: detailed monitoring is a paid service (charged per metric per hour); basic monitoring is kept for this test deployment.
 - CKV_AWS_382: the test instance needs unrestricted outbound traffic for package installs and updates.
 - CKV2_AWS_11: VPC flow logs are billed (CloudWatch ingestion or S3 vended-log charges). Cheapest option would be S3 delivery (storage only, a few cents per month on an idle test VPC); skipped for now.
-- CKV_AWS_273 (both users): legacy IAM users `agent-walkllc` and `rzkw-iam` stay until the retirement PR (step 8); SSO is the primary access path. This warning is skipped for now and may be addressed later.
-- CKV_AWS_274 (three): the `admin` group, the SSO `TerraformAdministrator` permission set, and the CI deploy role intentionally carry `AdministratorAccess`; rzkw requires full admin (write access to all deployed resources and all billing).
+- CKV_AWS_273 (both users): legacy IAM users `agent-walkllc` and `rzkw-iam` are kept for now; SSO is the primary access path. Step 8 retires `agent-walkllc` and the `read-only` group; the fate of `rzkw-iam` is decided separately. Skipped for now and may be addressed later.
+- CKV_AWS_274 (four): the `admin` group, the SSO `TerraformAdministrator` permission set, the CI deploy role, and the EC2 `dev-machine-role` intentionally carry `AdministratorAccess`; rzkw requires full admin (write access to all deployed resources and all billing), and the CI deploy role and the test instance need broad permissions to work as designed.
 
 **Apply note:** the `ec2/` root now needs `TF_VAR_ssh_public_key` (public key of the operator key pair) and `TF_VAR_ssh_ingress_cidr` (operator IP). The instance is replaced on the next apply because the key pair is added.
 
