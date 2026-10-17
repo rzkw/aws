@@ -134,6 +134,30 @@ role_arn = arn:aws:iam::<account-id>:role/agent-view-only
 
 The human logs in once per session and Terraform uses temporary credentials. The harness has no IAM user, no password, and no access keys. It can only view resources through `ViewOnlyAccess` plus the existing deny-changes policy. GitHub collaborator access for `agent-walkllc` is unchanged.
 
+## Checkov Scan Amendment (added 2026-10-17)
+
+The Checkov CI scan for this PR failed 13 checks (14 with a newer local Checkov). All are resolved; the scan now exits 0 with 0 failed and 11 skipped checks.
+
+**Fixed in code:**
+
+- CKV_AWS_79: the dev machine now enforces IMDSv2 (`http_tokens = "required"`).
+- CKV2_AWS_41: an instance profile role (`dev-machine-role`) is attached to the instance.
+- CKV_AWS_40 (both): `IAMUserChangePassword` moved from the user to the `admin` group. `SignInLocalDevelopmentAccess` was removed after checking the docs: it only powers `aws login` with console credentials, and with SSO configured the operator uses `aws sso login`.
+- CKV2_AWS_12: `aws_default_security_group` with no rules takes over the VPC default security group. (Note: this check is about the default security group, not routing.)
+- Also found and fixed while verifying: `aws_vpc.this` references in `vpc/main.tf` (the resource is `vpc-1`), the policy file name that the config referenced but did not exist, and 5 stale `import` blocks whose resources are no longer in configuration.
+
+**Skipped with justification:**
+
+- CKV_AWS_8: no EBS volumes are attached; there is no data to encrypt.
+- CKV_AWS_135: no EBS volumes; EBS optimization is not applicable.
+- CKV_AWS_126: detailed monitoring is a paid service (charged per metric per hour); basic monitoring is kept for this test deployment.
+- CKV_AWS_382: the test instance needs unrestricted outbound traffic for package installs and updates.
+- CKV2_AWS_11: VPC flow logs are billed (CloudWatch ingestion or S3 vended-log charges). Cheapest option would be S3 delivery (storage only, a few cents per month on an idle test VPC); skipped for now.
+- CKV_AWS_273 (both users): legacy IAM users `agent-walkllc` and `rzkw-iam` stay until the retirement PR (step 8); SSO is the primary access path. This warning is skipped for now and may be addressed later.
+- CKV_AWS_274 (three): the `admin` group, the SSO `TerraformAdministrator` permission set, and the CI deploy role intentionally carry `AdministratorAccess`; rzkw requires full admin (write access to all deployed resources and all billing).
+
+**Apply note:** the `ec2/` root now needs `TF_VAR_ssh_public_key` (public key of the operator key pair) and `TF_VAR_ssh_ingress_cidr` (operator IP). The instance is replaced on the next apply because the key pair is added.
+
 ## References
 
 - [IAM Security Best Practices: use temporary credentials instead of long-term access keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
@@ -149,3 +173,8 @@ The human logs in once per session and Terraform uses temporary credentials. The
 - [Terraform `aws_ssoadmin_account_assignment`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_account_assignment)
 - [Terraform `aws_identitystore_user`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/identitystore_user)
 - [Terraform `aws_iam_role`](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role)
+- [EC2: require IMDSv2 (instance metadata service version 2)](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html)
+- [EC2: basic monitoring is free, detailed monitoring is charged per metric](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/manage-detailed-monitoring.html)
+- [Amazon VPC FAQ: VPC flow log ingestion and archival charges apply](https://aws.amazon.com/vpc/faqs/)
+- [AWS managed policy `SignInLocalDevelopmentAccess`: programmatic access with console credentials](https://docs.aws.amazon.com/signin/latest/userguide/security-iam-awsmanpol.html)
+- [VPC: the default security group should restrict all traffic](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html)
