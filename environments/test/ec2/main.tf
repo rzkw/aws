@@ -101,8 +101,8 @@ resource "aws_instance" "dev-machine" {
     http_tokens = "required"
   }
 
-  #checkov:skip=CKV_AWS_8: no EBS volumes attached to this instance; there is no data to encrypt
-  #checkov:skip=CKV_AWS_135: no EBS volumes attached; EBS optimization is not applicable to this setup
+  #checkov:skip=CKV_AWS_8: the root volume holds no sensitive data; this disposable test box skips volume encryption by operator decision
+  #checkov:skip=CKV_AWS_135: this burstable test instance has no dedicated EBS throughput requirement; EBS optimization does not apply to it
   #checkov:skip=CKV_AWS_126: detailed monitoring is a paid service; basic monitoring is kept for this test deployment
 
   tags = {
