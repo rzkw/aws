@@ -83,6 +83,8 @@ resource "aws_iam_role_policy_attachment" "github_actions" {
 
   role       = aws_iam_role.github_actions.name
   policy_arn = each.value
+
+  #checkov:skip=CKV_AWS_274: the CI deploy role needs broad permissions to manage all test-environment resources; its trust policy is restricted to this repository via OIDC
 }
 
 # Optional: Attach custom inline policies

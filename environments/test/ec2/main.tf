@@ -20,12 +20,90 @@ data "aws_ami" "ubuntu" {
 }
 
 
-# Defines components of infra. Instance can be referred to by resource address: aws_instance.app_server
+# SSH access: key pair created from the public key passed at apply time (TF_VAR_ssh_public_key)
 
 
-resource "aws_instance" "app_server" {
-  ami           = data.aws_ami.ubuntu.id
-  instance_type = "t2.nano"
+resource "aws_key_pair" "dev-machine" {
+  key_name   = "dev-machine-key"
+  public_key = var.ssh_public_key
+}
+
+
+resource "aws_security_group" "dev-machine" {
+  name        = "dev-machine-ssh"
+  description = "SSH to dev-machine from the operator IP"
+
+  #checkov:skip=CKV_AWS_382: test instance needs unrestricted outbound traffic for package installs and updates
+
+  ingress {
+    description = "SSH from operator"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_ingress_cidr]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+
+# Instance profile role: admin rights so the operator can test AWS API access from the box
+
+
+resource "aws_iam_role" "dev-machine" {
+  name = "dev-machine-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { Service = "ec2.amazonaws.com" }
+        Action    = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+
+resource "aws_iam_role_policy_attachment" "dev-machine" {
+  role       = aws_iam_role.dev-machine.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+
+  #checkov:skip=CKV_AWS_274: single-operator test instance needs admin rights to test AWS API access from the box
+}
+
+
+resource "aws_iam_instance_profile" "dev-machine" {
+  name = "dev-machine-profile"
+  role = aws_iam_role.dev-machine.name
+}
+
+
+# Defines components of infra. Instance can be referred to by resource address: aws_instance.dev-machine
+
+
+resource "aws_instance" "dev-machine" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = "t2.nano"
+  key_name               = aws_key_pair.dev-machine.key_name
+  vpc_security_group_ids = [aws_security_group.dev-machine.id]
+  iam_instance_profile   = aws_iam_instance_profile.dev-machine.name
+
+  # Enforce IMDSv2 (latest instance metadata service version)
+  metadata_options {
+    http_tokens = "required"
+  }
+
+  #checkov:skip=CKV_AWS_8: the root volume holds no sensitive data; this disposable test box skips volume encryption by operator decision
+  #checkov:skip=CKV_AWS_135: this burstable test instance has no dedicated EBS throughput requirement; EBS optimization does not apply to it
+  #checkov:skip=CKV_AWS_126: detailed monitoring is a paid service; basic monitoring is kept for this test deployment
 
   tags = {
     Name = "dev-machine"
