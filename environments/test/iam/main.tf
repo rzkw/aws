@@ -8,10 +8,14 @@ provider "aws" {
 
 resource "aws_iam_user" "agent_walkllc" {
   name = "agent-walkllc"
+
+  #checkov:skip=CKV_AWS_273: legacy IAM user kept until the retirement PR; access is controlled through IAM Identity Center (SSO)
 }
 
 resource "aws_iam_user" "rzkw_iam" {
   name = "rzkw-iam"
+
+  #checkov:skip=CKV_AWS_273: legacy IAM user kept until the retirement PR; access is controlled through IAM Identity Center (SSO)
 }
 
 
@@ -37,25 +41,20 @@ resource "aws_iam_user_group_membership" "rzkw_iam_admin" {
 }
 
 
-# User policy attachments for rzkw 
-
-resource "aws_iam_user_policy_attachment" "rzkw_iam_user_change_password" {
-  user       = aws_iam_user.rzkw_iam.name
-  policy_arn = "arn:aws:iam::aws:policy/IAMUserChangePassword"
-}
-
-resource "aws_iam_user_policy_attachment" "rzkw_iam_sign_in_local_development" {
-  user       = aws_iam_user.rzkw_iam.name
-  policy_arn = "arn:aws:iam::aws:policy/SignInLocalDevelopmentAccess"
-}
-
-
 # Group policy attachments for admin 
+# (policies attach to groups, never to users directly)
 
 
 resource "aws_iam_group_policy_attachment" "admin_administrator_access" {
   group      = aws_iam_group.admin.name
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+
+  #checkov:skip=CKV_AWS_274: rzkw must operate at admin level (write access to all deployed resources and billing); the SSO TerraformAdministrator permission set mirrors this
+}
+
+resource "aws_iam_group_policy_attachment" "admin_iam_user_change_password" {
+  group      = aws_iam_group.admin.name
+  policy_arn = "arn:aws:iam::aws:policy/IAMUserChangePassword"
 }
 
 
@@ -135,6 +134,8 @@ resource "aws_ssoadmin_managed_policy_attachment" "terraform_admin" {
   instance_arn       = tolist(data.aws_ssoadmin_instances.sso_instance.arns)[0]
   permission_set_arn = aws_ssoadmin_permission_set.terraform_admin.arn
   managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+
+  #checkov:skip=CKV_AWS_274: the TerraformAdministrator permission set intentionally grants rzkw full admin access through SSO
 }
 
 resource "aws_iam_role" "agent_view_only" {
