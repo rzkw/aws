@@ -1,17 +1,22 @@
-# AWS dev environment
+# AWS labs
 
 [![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=flat&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![TFLint](https://img.shields.io/badge/linting-tflint-blue.svg?style=flat)](https://github.com/terraform-linters/tflint)
 [![Checkov](https://img.shields.io/badge/security-checkov-brightgreen.svg?style=flat)](https://www.checkov.io/)
 
-Terraform code for Walkable LLC's dev environment on AWS. It sets up the test environment, supports multiple environments, and automates deployments.
+Terraform code for Walkable LLC's internal dev environment on AWS, built on a starter kit by [Towards The Cloud](https://github.com/towardsthecloud/aws-terraform-starter-kit). 
 
-- Sets up the test environment with Terraform.
-- Uses GitHub Actions OIDC, so CI does not need long-lived AWS keys.
-- Supports multiple environments with a clear account mapping.
-- Stores Terraform state in an encrypted, versioned S3 bucket with locking; DynamoDB is not needed.
-- Stops deployment when TFLint or Checkov finds a problem.
+- The kit is deployed by running `make setup`, automating S3 bucket deployment for remote state backend
+- Infrastructure is deployed by a GitHub Actions workflow with OIDC auth, so CI doesn't need long-lived AWS keys.
+- Supports multiple environments with a clear account mapping (though a single test env is currently deployed)
+- Merge gates include TFLint and Checkov, blocking deployment when code quality and vulnerability checks fail
+
+## Why use a starter kit?
+
+The starter kit allows building on an existing codebase, mirroring how real infra work happens - reading, understanding, and extending. 
+
+Hand-built/agent assisted CI/CD workflows and remote state can be seen in my [web app](https://github.com/rzkw/walkable/blob/main/.github/workflows/dependabot-auto-approve.yml) and [OCI compute](https://github.com/rzkw/oci-cloudinfra/pull/85) repos.
 
 ## Deployed Infrastructure
 
@@ -21,7 +26,7 @@ The following resources are managed here. This list was checked against live AWS
 | --- | --- |
 | S3 remote state bucket | Encrypted with AES256, versioned, and protected by native `.tflock` locking |
 | GitHub Actions OIDC provider | Uses `token.actions.githubusercontent.com` and the audience `sts.amazonaws.com` |
-| GitHub Actions IAM role | CI assumes this role through OIDC; trust conditions limit it to this repository |
+| GitHub Actions IAM role | CI assumes this role through OIDC |
 | AWS Budgets | Cost budgets with email and threshold alerts |
 
 ## Estimated Monthly Cost
@@ -33,7 +38,7 @@ Manual AWS Cost Explorer snapshot from 2026-09-18 (account-level, `us-east-1`):
 - Current-month actual: **A$0.0006** (US$0.00038 × 1.55)
 - Current-month forecast: **A$0.0006** (US$0.00038 × 1.55)
 
-This is account-level data and may include AWS use outside this repository. Cost Explorer is not queried during documentation refresh because each API call costs money. The value is a manual snapshot and is refreshed as needed.
+This is account-level data and may include AWS use outside this repository. Cost Explorer is not queried because each API call costs money. The value is a manual snapshot, refreshed as needed.
 
 ## Documentation
 
@@ -46,9 +51,6 @@ This is account-level data and may include AWS use outside this repository. Cost
 ## Security
 
 - Never put credentials, tokens, private keys, AWS account IDs, ARNs, resource IDs, or state bucket names in documentation. See [Repository Guidance](AGENTS.md).
-- CI uses GitHub Actions OIDC and temporary credentials instead of long-lived AWS keys.
-- Terraform state stays in encrypted, versioned S3 with native locking. Every root uses an explicit state key.
 - Do not commit `.tfvars`; pass values through environment variables or CLI flags.
-- TFLint and Checkov run as required CI checks. If either check fails, deployment stops.
 
 See [Security details](docs/security.md) for the full guidance.
