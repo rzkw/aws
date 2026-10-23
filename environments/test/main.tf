@@ -6,7 +6,7 @@ provider "aws" {
     tags = {
       Environment = "test"
       ManagedBy   = "terraform"
-      Repository  = "rzkw/aws-terraform"
+      Repository  = "rzkw/aws"
     }
   }
 }

@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "github_repo" {
   description = "GitHub repository name (format: owner/repo)"
   type        = string
-  default     = "rzkw/aws-terraform"
+  default     = "rzkw/aws"
 }
 
 variable "github_thumbprint" {
